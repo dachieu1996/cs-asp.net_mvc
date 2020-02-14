@@ -20,11 +20,15 @@ namespace Vidly
                 defaults: new { controller = "Home", action = "Index", id = UrlParameter.Optional }
             );
 
+            // Route: Convention-base Routing
             routes.MapRoute(
                 name: "MoviesByReleaseDate", 
                 url: "movie/released/{year}/{month}", 
                 defaults: new { controller = "Movie", action = "ByReleaseDate" },
                 constraints: new { year = @"\d{4}", month = @"\d{2}"}); // Optional
+
+            // Route: Attribute Routing
+            routes.MapMvcAttributeRoutes();
         }
     }
 }
