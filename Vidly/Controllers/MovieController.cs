@@ -14,9 +14,15 @@ namespace Vidly.Controllers
             return View();
         }
 
-        public ActionResult Edit(int id, int anotherId)
+        public ActionResult Parameter(int id, int anotherId)
         {
             return Content("Id: " + id + ", AnotherId: " + anotherId);
+        }
+
+        // Convention-base Routing
+        public ActionResult ByReleaseDate(int year, int month)
+        {
+            return Content(year + "/" + month);
         }
     }
 }
