@@ -165,3 +165,76 @@ public class MovieController : Controller
     }
 </ul>
 ```
+## View: Link
+```css
+@Html.ActionLink(customer.Name, "Detail", "Customer", new { id = customer.Id }, null)
+```
+
+## Model: Migrations
+```
+enable-migrations
+add-migration InitialModel
+update-database
+```
+```js
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
+{
+    public DbSet<Customer> Customers { get; set; }
+    public DbSet<Movie> Movies { get; set; }
+
+    public ApplicationDbContext()
+        : base("DefaultConnection", throwIfV1Schema: false)
+    {
+    }
+
+    public static ApplicationDbContext Create()
+    {
+        return new ApplicationDbContext();
+    }
+}
+```
+## Model: Seeding - Raw Query
+```js
+public partial class SeedMembershipType : DbMigration
+{
+    public override void Up()
+    {
+        Sql("INSERT INTO MembershipTypes (SignUpFee, DurationInMonths, DiscountRate) VALUES (0, 0, 0)");
+        Sql("INSERT INTO MembershipTypes (SignUpFee, DurationInMonths, DiscountRate) VALUES (30, 1, 10)");
+        Sql("INSERT INTO MembershipTypes (SignUpFee, DurationInMonths, DiscountRate) VALUES (90, 3, 15)");
+        Sql("INSERT INTO MembershipTypes (SignUpFee, DurationInMonths, DiscountRate) VALUES (300, 12, 20)");
+    }
+        
+    public override void Down()
+    {
+    }
+}
+```
+
+## View: Form (TextBox, Date, Checkbox, DropdownList, Hidden)
+```html
+<h2>New Customer</h2>
+
+@using (Html.BeginForm("Save", "Customer"))
+{
+    <div class="form-group">
+        @Html.LabelFor(m => m.Customer.Name)
+        @Html.TextBoxFor(m => m.Customer.Name, new { @class = "form-control" })
+    </div>
+    <div class="form-group">
+        @Html.LabelFor(m => m.Customer.BirthDate)
+        @Html.TextBoxFor(m => m.Customer.BirthDate,"{0:yyyy-MM-dd}", new { @class = "form-control datepicker", type = "date" })
+    </div>
+    <div class="form-group">
+        @Html.LabelFor(m => m.Customer.MembershipTypeId)
+        @Html.DropDownListFor(m => m.Customer.MembershipTypeId, new SelectList(Model.MembershipTypes,"Id","DurationInMonths"),"Select Membership Type", new { @class = "form-control" })
+    </div>
+    <div class="checkbox">
+        <label>
+            @Html.CheckBoxFor(m => m.Customer.IsSubcribedToNewsletter) Subcribed to Newsletter
+        </label>
+    </div>
+    @Html.HiddenFor(m => m.Customer.Id)
+    <button type="submit" class="btn btn-primary">Save</button>
+}
+```
