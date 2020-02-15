@@ -238,3 +238,56 @@ public partial class SeedMembershipType : DbMigration
     <button type="submit" class="btn btn-primary">Save</button>
 }
 ```
+
+## Controller - Model: Model Binding
+```js
+[HttpPost]
+public ActionResult Save(Customer customer)
+{
+    if (customer.Id == 0)
+        _context.Customers.Add(customer);
+    else
+    {
+        var customerInDb = _context.Customers.SingleOrDefault(c => c.Id == customer.Id);
+        customerInDb.Name = customer.Name;
+        customerInDb.BirthDate = customer.BirthDate;
+        customerInDb.IsSubcribedToNewsletter = customer.IsSubcribedToNewsletter;
+        customerInDb.MembershipTypeId = customer.MembershipTypeId;
+    }
+            
+    _context.SaveChanges();
+    return RedirectToAction("Index");
+}
+```
+## Controller - Model - View: Validation
+```js
+[HttpPost]
+public ActionResult Save(Customer customer)// CustomerController
+{
+    if (!ModelState.IsValid)
+    {
+        var viewModel = new CustomerFormViewModel
+        {
+            Customer = customer,
+            MembershipTypes = _context.MembershipTypes.ToList()
+        };
+        return View("CustomerForm", viewModel);
+    }
+    ...
+}
+```
+```js
+public class Customer
+{
+    [Required]
+    [MaxLength(255)]
+    public string Name { get; set; }
+}
+```
+```html
+<div class="form-group">
+    @Html.LabelFor(m => m.Customer.Name)
+    @Html.TextBoxFor(m => m.Customer.Name, new { @class = "form-control" })
+    @Html.ValidationMessageFor( m => m.Customer.Name)
+</div>
+```
