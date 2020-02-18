@@ -1,7 +1,7 @@
 # Fundamentals
 ## Route: Get Parameters From Url
 
-```js
+```cs
 public class MovieController : Controller
 {
     public ActionResult Parameter(int id, int anotherId)
@@ -16,7 +16,7 @@ Id: 1, AnotherId: 3
 ```
 
 ## Route: Convention-base Routing
-```js
+```cs
 public class RouteConfig
 {
     public static void RegisterRoutes(RouteCollection routes)
@@ -29,7 +29,7 @@ public class RouteConfig
     }
 }
 ```
-```js
+```cs
 public class MovieController : Controller
 {
     public ActionResult ByReleaseDate(int year, int month)
@@ -49,7 +49,7 @@ ERROR 404
 ```
 
 ## Route: Attribute Routing
-```js
+```cs
 public class RouteConfig
 {
     public static void RegisterRoutes(RouteCollection routes)
@@ -58,7 +58,7 @@ public class RouteConfig
     }
 }
 ```
-```js
+```cs
 public class MovieController : Controller
 {
     // Route: Attribute Routing
@@ -75,7 +75,7 @@ Link: /movie/issued/2020/2
 ```
 
 ## View: Passing Data to View
-```js
+```cs
 public class MovieController : Controller
 {
     public ActionResult Ramdon()
@@ -94,7 +94,7 @@ public class MovieController : Controller
 Shrek!
 ```
 #### ViewData - Cons: Magic string inside
-```js
+```cs
 public ActionResult Ramdon()
 {
     var movie = new Movie() { Name = "Shrek!" };
@@ -109,7 +109,7 @@ public ActionResult Ramdon()
 ```
 
 #### ViewBag
-```js
+```cs
 public ActionResult Ramdon()
 {
     var movie = new Movie() { Name = "Shrek!" };
@@ -124,14 +124,14 @@ public ActionResult Ramdon()
 ```
 
 ## View: ViewModel
-```js
+```cs
 public class RamdonMovieViewModel
 {
     public Movie Movie { get; set; }
     public List<Customer> Customers { get; set; }
 }
 ```
-```js
+```cs
 public class MovieController : Controller
 {
     // View: Passing Data to Views
@@ -176,7 +176,7 @@ enable-migrations
 add-migration InitialModel
 update-database
 ```
-```js
+```cs
 public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
     public DbSet<Customer> Customers { get; set; }
@@ -194,7 +194,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 }
 ```
 ## Model: Seeding - Raw Query
-```js
+```cs
 public partial class SeedMembershipType : DbMigration
 {
     public override void Up()
@@ -240,7 +240,7 @@ public partial class SeedMembershipType : DbMigration
 ```
 
 ## Controller - Model: Model Binding
-```js
+```cs
 [HttpPost]
 public ActionResult Save(Customer customer)
 {
@@ -260,7 +260,7 @@ public ActionResult Save(Customer customer)
 }
 ```
 ## Controller - Model - View: Validation
-```js
+```cs
 [HttpPost]
 public ActionResult Save(Customer customer)// CustomerController
 {
@@ -276,10 +276,10 @@ public ActionResult Save(Customer customer)// CustomerController
     ...
 }
 ```
-```js
+```cs
 public class Customer
 {
-    [Required]
+    [Required(ErrorMessage = "Field Name is required")]
     [MaxLength(255)]
     public string Name { get; set; }
 }
@@ -290,4 +290,151 @@ public class Customer
     @Html.TextBoxFor(m => m.Customer.Name, new { @class = "form-control" })
     @Html.ValidationMessageFor( m => m.Customer.Name)
 </div>
+```
+Add style for validation Content/Site.css
+```css
+.field-validation-error {
+    color: red;
+}
+
+.input-validation-error {
+    border: 2px solid red;
+}
+```
+
+## Controller - Model - View: Custom Validation
+```cs
+public class Min18YearsIfAMember : ValidationAttribute
+{
+    protected override ValidationResult IsValid(object value, ValidationContext validationContext)
+    {
+        var customer = (Customer) validationContext.ObjectInstance;
+
+        if(customer.MembershipTypeId == MembershipType.Unknown || customer.MembershipTypeId == MembershipType.PayAsYouGo)
+            return ValidationResult.Success;
+
+        if(customer.BirthDate == null)
+            return new ValidationResult("Birthdate is required");
+
+        var age = DateTime.Today.Year - customer.BirthDate.Value.Year;
+
+        return (age >= 18) 
+            ? ValidationResult.Success 
+            : new ValidationResult("Customer should be at least 18 year");
+    }
+}
+```
+```cs
+// Customer.cs
+[Display(Name = "Date of Birth")] 
+[Min18YearsIfAMember]
+public DateTime? BirthDate { get; set; }
+```
+
+## Controller - Model - View: Client-side Validation
+```cs
+// CustomerForm.chtml
+@section scripts
+{
+    @Scripts.Render("~/bundles/jqueryval")
+}
+```
+
+## Controller - View: CSRF
+```cs
+@using (Html.BeginForm("Save", "Customer"))
+{
+    ...
+    @Html.AntiForgeryToken()
+    <button type="submit" class="btn btn-primary">Save</button>
+}
+```
+```cs
+[HttpPost]
+[ValidateAntiForgeryToken]
+public ActionResult Save(Customer customer) {}
+```
+
+## Controller: Api
+```cs
+// App_Start Folder_
+public static class WebApiConfig
+{
+    public static void Register(HttpConfiguration config)
+    {
+        config.MapHttpAttributeRoutes();
+
+        config.Routes.MapHttpRoute(
+            name: "DefaultApi",
+            routeTemplate: "api/{controller}/{id}",
+            defaults: new { id = RouteParameter.Optional }
+        );
+    }
+}
+```
+```cs
+public class MvcApplication : System.Web.HttpApplication
+{
+    protected void Application_Start()
+    {
+        GlobalConfiguration.Configure(WebApiConfig.Register);
+        ...
+    }
+}
+```
+## Controller: Api - DTO -Data Transfer Object
+```cs
+// Dtos/CustomerDto.cs
+public class CustomerDto
+{
+    public int Id { get; set; }
+
+    [Required(ErrorMessage = "Field Name is required")]
+    [MaxLength(255)]
+    public string Name { get; set; }
+
+    [Min18YearsIfAMember]
+    public DateTime? BirthDate { get; set; }
+
+    public bool IsSubcribedToNewsletter { get; set; }
+
+    public byte MembershipTypeId { get; set; }
+}
+```
+
+#### AutoMapper
+```
+install-package automapper -version:4.1
+```
+```cs
+public class MappingProfile : Profile
+{
+    public MappingProfile()
+    {
+        Mapper.CreateMap<Customer, CustomerDto>();
+        Mapper.CreateMap<CustomerDto, Customer>();
+    }
+}
+```
+```cs
+public class MvcApplication : System.Web.HttpApplication
+{
+    protected void Application_Start()
+    {
+        Mapper.Initialize(c => c.AddProfile<MappingProfile>());
+        ...
+    }
+}
+```
+```cs
+public class CustomerController : ApiController
+{
+    private ApplicationDbContext _context = new ApplicationDbContext();
+
+    // GET: api/Customer
+    public IEnumerable<CustomerDto> GetCustomers()
+    {
+        return _context.Customers.ToList().Select(Mapper.Map<Customer, CustomerDto>);
+    }
+}
 ```
